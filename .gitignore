@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Project caches
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Streamlit local secrets
+.streamlit/secrets.toml
+
+# Database backups
+data/*.db.bak*
+data/*.db.backup
+data/sdg_input/
+
+# Reference materials (large copyrighted textbook downloads)
+Time_Series_Forecasting_in_Python_Fi_z_library_sk,_1lib_sk,.md
+
+
