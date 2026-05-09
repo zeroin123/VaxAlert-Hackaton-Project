@@ -32,6 +32,109 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ── Custom Design System (CSS) ──────────────────────────────────────────────
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"]  {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Main background */
+    [data-testid="stAppViewContainer"] {
+        background-color: #f9fafb;
+    }
+    
+    /* Header styling */
+    .main-header {
+        background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 16px;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .main-header h1 {
+        color: white !important;
+        margin: 0;
+        font-weight: 700;
+        font-size: 2rem;
+    }
+    
+    .main-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+
+    /* KPI Card styling override */
+    [data-testid="stMetric"] {
+        background-color: white !important;
+        padding: 1.25rem !important;
+        border-radius: 16px !important;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+        border: 1px solid #f3f4f6 !important;
+    }
+    
+    [data-testid="stMetricValue"] {
+        font-size: 1.875rem !important;
+        font-weight: 700 !important;
+        color: #111827 !important;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        font-weight: 500 !important;
+        color: #4b5563 !important;
+        font-size: 0.875rem !important;
+    }
+
+    /* Sidebar clean-up */
+    [data-testid="stSidebar"] {
+        background-color: white;
+        border-right: 1px solid #e5e7eb;
+    }
+    
+    .st-emotion-cache-16idsys p {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    /* Tabs styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: transparent;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        white-space: pre-wrap;
+        background-color: #f3f4f6;
+        border-radius: 8px 8px 0px 0px;
+        gap: 1px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        font-weight: 500;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #3b82f6 !important;
+        color: white !important;
+    }
+
+    /* Chart containers */
+    .chart-container {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 16px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        border: 1px solid #f3f4f6;
+        margin-bottom: 1.5rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # ── Cached data loaders ──────────────────────────────────────────────────────
 
 @st.cache_data(ttl=300)
@@ -176,7 +279,12 @@ def no_forecast_warning():
 # ════════════════════════════════════════════════════════════════════════════
 
 if view == "🌍 National Overview":
-    st.title("🌍 National Overview")
+    st.markdown("""
+    <div class="main-header">
+        <h1>🌍 National Overview</h1>
+        <p>Real-time vaccine stockout risk and predictive analytics across Ethiopia's EPI network.</p>
+    </div>
+    """, unsafe_allow_html=True)
     st.caption("Real-time vaccine stockout risk across Ethiopia's EPI network")
 
     if forecast_output.empty:
