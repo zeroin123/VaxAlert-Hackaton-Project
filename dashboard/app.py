@@ -216,9 +216,13 @@ feature_importance = load_feature_importance()
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Flag_of_Ethiopia.svg/120px-Flag_of_Ethiopia.svg.png", width=80)
-    st.title("VaxAlert")
-    st.caption("Ethiopia EPI Stockout Alert System")
+    st.sidebar.markdown("""
+        <div style="text-align: center; padding: 1.5rem 0.5rem; background: #f9fafb; border-radius: 16px; margin-bottom: 2rem; border: 1px solid #e5e7eb;">
+            <img src="https://raw.githubusercontent.com/stevenrskelton/flag-icon/master/png/75/country-4x3/et.png" width="45" style="margin-bottom: 1rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="margin:0; color:#1e3a8a; font-size: 1.5rem; font-weight: 700;">VaxAlert</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; font-weight: 500;">Ethiopia EPI System</p>
+        </div>
+    """, unsafe_allow_html=True)
     st.divider()
 
     view = st.radio(
@@ -297,9 +301,8 @@ if view == "🌍 National Overview":
         render_kpi_cards(stock_ledger, fo_filtered, target_population, fac_filtered,
                          forecast_horizon=forecast_horizon)
 
-        st.divider()
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
         st.subheader("Facility Alert Map")
-
         # Show the user which forecast week the map represents
         if not forecast_output.empty:
             first_wk = int(forecast_output["forecast_week"].min())
@@ -312,22 +315,26 @@ if view == "🌍 National Overview":
                     f"Adjust the **Forecast Horizon** slider in the sidebar (1 = next week, 8 = 8 weeks ahead)."
                 )
 
-        # Centre the map at ~80% width using a 3-column layout
-        _, mid_col, _ = st.columns([1, 6, 1])
-        with mid_col:
-            render_facility_map(fac_filtered, fo_filtered, forecast_horizon=forecast_horizon)
+        render_facility_map(fac_filtered, fo_filtered, forecast_horizon=forecast_horizon)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        st.divider()
-        st.subheader("Active Alerts")
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        st.subheader("Active Alerts & Risk Summary")
         render_alert_table(fo_filtered, fac_filtered, clusters,
                            forecast_horizon=forecast_horizon)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════════════════════
 # VIEW 2: Facility Drill-Down
 # ════════════════════════════════════════════════════════════════════════════
 
 elif view == "🏥 Facility Drill-Down":
-    st.title("🏥 Facility Drill-Down")
+    st.markdown("""
+    <div class="main-header">
+        <h1>🏥 Facility Drill-Down</h1>
+        <p>Deep-dive into facility-level inventory trends, AI explainability, and historical shocks.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     col_sel1, col_sel2 = st.columns(2)
     with col_sel1:
@@ -376,6 +383,7 @@ elif view == "🏥 Facility Drill-Down":
             ens_weights["w_prophet"] = float(ens_row.iloc[0]["w_prophet"] or 0.5)
             val_mae = float(ens_row.iloc[0]["mae"] or 0.0)
 
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
     if not series.empty:
         from dashboard.components.stock_chart import render_stock_chart
         render_stock_chart(
@@ -390,14 +398,17 @@ elif view == "🏥 Facility Drill-Down":
         )
     else:
         st.warning("No stock data for this facility/antigen combination.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Per-facility feature importance ──────────────────────────────────────
     if not feature_importance.empty:
-        st.divider()
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
         from dashboard.components.feature_importance_panel import render_feature_importance_panel
         render_feature_importance_panel(sel_fid, sel_fac["name"], feature_importance)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Delivery timeline ────────────────────────────────────────────────────
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
     st.subheader("Resupply Delivery History")
     deliveries = load_delivery(sel_fid, sel_ant)
     if not deliveries.empty:
@@ -415,7 +426,7 @@ elif view == "🏥 Facility Drill-Down":
             x=deliveries["x"],
             y=deliveries["quantity_received"],
             name="Received",
-            marker_color=deliveries["emergency_order"].map({1: "#e74c3c", 0: "#3498db"}),
+            marker_color=deliveries["emergency_order"].map({1: "#ef4444", 0: "#3b82f6"}),
         ))
         fig_del.update_layout(
             barmode="overlay",
@@ -424,10 +435,13 @@ elif view == "🏥 Facility Drill-Down":
             xaxis_title="Date", yaxis_title="Doses",
             margin=dict(l=50, r=20, t=50, b=40),
             legend=dict(orientation="h", y=1.1),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
         )
         st.plotly_chart(fig_del, use_container_width=True)
     else:
         st.info("No delivery records for this selection.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Session performance ──────────────────────────────────────────────────
     st.subheader("Session Performance")
@@ -464,7 +478,12 @@ elif view == "🏥 Facility Drill-Down":
 # ════════════════════════════════════════════════════════════════════════════
 
 elif view == "🔗 Cascade View":
-    st.title("🔗 HC → HP Cascade View")
+    st.markdown("""
+    <div class="main-header">
+        <h1>🔗 Cascade Network View</h1>
+        <p>Visualize supply chain dependencies and simulate the impact of early resupply interventions.</p>
+    </div>
+    """, unsafe_allow_html=True)
     st.caption("Stockout propagation from Health Centers to satellite Health Posts")
 
     hc_facilities = facilities[facilities["type"] == "Health Center"]
@@ -493,7 +512,12 @@ elif view == "🔗 Cascade View":
 # ════════════════════════════════════════════════════════════════════════════
 
 elif view == "📊 Model Performance":
-    st.title("📊 Model Performance")
+    st.markdown("""
+    <div class="main-header">
+        <h1>📊 Model Performance</h1>
+        <p>Transparency into the accuracy, reliability, and error metrics of our ensemble forecasting engine.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     if model_metrics.empty:
         st.warning("No model metrics found. Run walk_forward_cv.py first.")
