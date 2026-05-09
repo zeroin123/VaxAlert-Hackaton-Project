@@ -48,21 +48,51 @@ def render_kpi_cards(
     else:
         dropout_rate = float("nan")
 
-    # ── KPI 3: Children at risk this week ───────────────────────────────────
-    latest_ledger_week = int(stock_ledger["week"].max())
-    children_at_risk = int(
-        stock_ledger[stock_ledger["week"] == latest_ledger_week]["children_missed"].sum()
-    )
+    # ── KPI 3: Predicted Children at Risk (Future) ──────────────────────────
+    # If a facility is predicted to be in 'critical' status, the children at 
+    # risk are those served by that facility/antigen pair in that week.
+    if ens_latest.empty:
+        children_at_risk = 0
+    else:
+        critical_pairs = ens_latest[ens_latest["alert_status"] == "critical"]
+        if critical_pairs.empty:
+            children_at_risk = 0
+        else:
+            # Merge with target_population to get weekly demand
+            at_risk_merged = critical_pairs.merge(
+                target_population[["facility_id", "antigen", "weekly_consumption_baseline"]],
+                on=["facility_id", "antigen"],
+                how="left"
+            )
+            children_at_risk = int(at_risk_merged["weekly_consumption_baseline"].sum())
+
+    # Calculate delta for children at risk
+    if ens_prev_week.empty:
+        prev_risk = 0
+    else:
+        prev_critical = ens_prev_week[ens_prev_week["alert_status"] == "critical"]
+        prev_merged = prev_critical.merge(
+            target_population[["facility_id", "antigen", "weekly_consumption_baseline"]],
+            on=["facility_id", "antigen"],
+            how="left"
+        )
+        prev_risk = int(prev_merged["weekly_consumption_baseline"].sum())
+    
+    delta_risk = children_at_risk - prev_risk
 
     # ── KPI 4: Wastage rate (last 12 weeks) ─────────────────────────────────
     from utils.db import get_connection
     with get_connection() as conn:
-        session_df = pd.read_sql("SELECT * FROM session_log", conn)
-    recent_start = max(0, int(session_df["week"].max()) - 11)
-    recent_sessions = session_df[session_df["week"] >= recent_start]
-    total_admin = recent_sessions["doses_administered"].sum()
-    total_wasted = recent_sessions["doses_wasted"].sum()
-    wastage_rate = total_wasted / max(total_admin + total_wasted, 1)
+        tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if "session_log" in tables:
+            session_df = pd.read_sql("SELECT * FROM session_log", conn)
+            recent_start = max(0, int(session_df["week"].max()) - 11)
+            recent_sessions = session_df[session_df["week"] >= recent_start]
+            total_admin = recent_sessions["doses_administered"].sum()
+            total_wasted = recent_sessions["doses_wasted"].sum()
+            wastage_rate = total_wasted / max(total_admin + total_wasted, 1)
+        else:
+            wastage_rate = 0.0
 
     # ── KPI 5: Resupply urgency score ────────────────────────────────────────
     at_risk = ens_latest[ens_latest["alert_status"].isin(["critical", "warning"])].copy()
@@ -103,7 +133,7 @@ def render_kpi_cards(
 
     with col1:
         st.metric(
-            label="🚨 Critical Stockout Alerts",
+            label="🚨 Predicted Critical Alerts",
             value=critical_now,
             delta=f"{delta_critical:+d} vs prev week",
             delta_color="inverse",
@@ -128,9 +158,12 @@ def render_kpi_cards(
 
     with col3:
         st.metric(
-            label="👶 Children Missed This Week",
+            label="👶 Predicted Children at Risk",
             value=f"{children_at_risk:,}",
+            delta=f"{delta_risk:+d} vs prev week",
+            delta_color="inverse",
         )
+        st.caption("Based on future critical alerts")
 
     with col4:
         wrate_pct = wastage_rate * 100
@@ -141,7 +174,7 @@ def render_kpi_cards(
             delta="WHO benchmark: 10%",
             delta_color="off",
         )
-        st.caption(f"{color} Last 12 weeks")
+        st.caption(f"{color} Last 12 weeks (Actual)")
 
     with col5:
         st.metric(
@@ -150,3 +183,4 @@ def render_kpi_cards(
             delta="Higher = more urgent",
             delta_color="off",
         )
+        st.caption("Future priority index")
