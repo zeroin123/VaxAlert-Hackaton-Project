@@ -72,65 +72,74 @@ st.markdown("""
     /* KPI Card styling override */
     [data-testid="stMetric"] {
         background-color: white !important;
-        padding: 1.25rem !important;
-        border-radius: 16px !important;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
-        border: 1px solid #f3f4f6 !important;
+        padding: 1.5rem !important;
+        border-radius: 20px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        border: 1px solid #f1f5f9 !important;
+        transition: transform 0.2s, box-shadow 0.2s !important;
+    }
+    
+    [data-testid="stMetric"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
     }
     
     [data-testid="stMetricValue"] {
-        font-size: 1.875rem !important;
-        font-weight: 700 !important;
-        color: #111827 !important;
+        font-size: 2.25rem !important;
+        letter-spacing: -0.025em !important;
     }
-    
-    [data-testid="stMetricLabel"] {
-        font-weight: 500 !important;
-        color: #4b5563 !important;
-        font-size: 0.875rem !important;
+
+    /* Table styling */
+    .stDataFrame {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
     }
 
     /* Sidebar clean-up */
     [data-testid="stSidebar"] {
-        background-color: white;
-        border-right: 1px solid #e5e7eb;
+        background-color: #ffffff;
+        border-right: 1px solid #f1f5f9;
     }
     
-    .st-emotion-cache-16idsys p {
-        font-weight: 600;
-        color: #374151;
-    }
-
-    /* Tabs styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: transparent;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        white-space: pre-wrap;
-        background-color: #f3f4f6;
-        border-radius: 8px 8px 0px 0px;
-        gap: 1px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-        font-weight: 500;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background-color: #3b82f6 !important;
-        color: white !important;
+    [data-testid="stSidebarNav"] {
+        padding-top: 1rem;
     }
 
     /* Chart containers */
     .chart-container {
         background-color: white;
-        padding: 1.5rem;
-        border-radius: 16px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-        border: 1px solid #f3f4f6;
+        padding: 2rem;
+        border-radius: 24px;
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        border: 1px solid #f1f5f9;
+        margin-bottom: 2rem;
+    }
+    
+    .chart-container h3 {
+        margin-top: 0;
+        font-weight: 700;
+        color: #1e293b;
+        letter-spacing: -0.01em;
+    }
+
+    /* Tabs styling refined */
+    .stTabs [data-baseweb="tab-list"] {
+        padding: 4px;
+        background-color: #f1f5f9;
+        border-radius: 12px;
         margin-bottom: 1.5rem;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px !important;
+        transition: all 0.2s !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: white !important;
+        color: #1d4ed8 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
     }
 </style>
 """, unsafe_allow_html=True)
