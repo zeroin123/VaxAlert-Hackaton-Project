@@ -414,6 +414,15 @@ elif view == "📊 Model Performance":
             summary["SDR (%)"] = (summary["SDR (%)"] * 100).round(1)
             summary["False Alert (%)"] = (summary["False Alert (%)"] * 100).round(1)
             st.dataframe(summary, use_container_width=True)
+            
+            with st.expander("📖 Metric Definitions & How to Interpret This Table"):
+                st.markdown("""
+                - **MAE (Mean Absolute Error)**: The average 'miss' in doses. For example, an MAE of 10.5 means the AI's prediction is typically off by ~10 doses. **Lower is better.**
+                - **MAPE (Mean Absolute Percentage Error)**: The average error as a percentage of the actual stock. This helps compare accuracy across facilities with very different volumes. **Lower is better.**
+                - **Interval Cov. (Interval Coverage)**: Measures the reliability of the 'shaded range' you see in charts. We aim for 80%—if it's 80%, the actual stock stays inside our predicted range 8 out of 10 times.
+                - **SDR (Stockout Detection Rate)**: **The most important operational metric.** It shows the % of actual stockouts that the AI correctly 'saw coming' at least 1 week in advance. **Higher is better.**
+                - **False Alert (%)**: The % of time the AI fires a 'Critical' alert but the facility does *not* actually run out. We keep this low to prevent 'alert fatigue' for supply chain officers. **Lower is better.**
+                """)
 
         cv_df = model_metrics[model_metrics["fold"].isin(["1", "2", "3"])].copy()
         if not cv_df.empty:
