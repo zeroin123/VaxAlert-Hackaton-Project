@@ -67,9 +67,15 @@ def render_feature_importance_panel(facility_id: str, facility_name: str,
     top_feature = fac_imp.iloc[0]["feature"]
     top_feature_pct = (fac_imp.iloc[0]["importance"] / fac_imp["importance"].sum() * 100).round(1)
     
+    # Get facility metadata for better explanation context
+    from utils.db import get_connection
+    with get_connection() as conn:
+        meta = conn.execute("SELECT region, access_tier, type FROM facilities WHERE facility_id=?", (facility_id,)).fetchone()
+        region, tier, ftype = meta if meta else ("Unknown", "Unknown", "Unknown")
+
     st.success(
         f"**Primary Driver:** '{_pretty(top_feature)}' accounts for **{top_feature_pct}%** of the AI's decision. "
-        f"{_describe(top_feature)}"
+        f"{_describe(top_feature, region, tier, ftype)}"
     )
 
     # Reverse for horizontal bar (highest importance at top)
@@ -102,7 +108,7 @@ def render_feature_importance_panel(facility_id: str, facility_name: str,
         legend_rows = [{
             "Signal Category": _get_category(f),
             "Technical Name": f,
-            "Plain-English Description": _describe(f),
+            "Plain-English Description": _describe(f, region, tier, ftype),
         } for f in fac_imp["feature"]]
         st.table(pd.DataFrame(legend_rows))
 
@@ -122,37 +128,42 @@ def _get_category(feature_name: str) -> str:
     return "🛠️ Other Signal"
 
 
-def _describe(feature_name: str) -> str:
-    """One-line plain-English description of why this feature matters."""
+def _describe(feature_name: str, region: str = "Unknown", tier: str = "Unknown", ftype: str = "Unknown") -> str:
+    """One-line plain-English description of why this feature matters, with facility context."""
+    
+    # Context-aware flavor text
+    is_remote = tier in ["rural_remote", "pastoral"]
+    loc_context = f"In {region}," if region != "Unknown" else "For this facility,"
+    
     descriptions = {
-        "lag_1": "Uses last week's stock to anchor the prediction. This ensures the forecast stays realistic based on current supply.",
-        "lag_4": "Identifies the monthly resupply rhythm—the AI 'remembers' if deliveries usually arrive every 4 weeks.",
-        "lag_12": "Looks back 3 months to see if there are quarterly spikes or dips in vaccine usage.",
-        "lag_26": "Captures half-year patterns, like seasonal movements between urban and rural areas.",
-        "lag_52": "Anchors annual cycles—for example, if this facility always runs low in December, the AI picks it up here.",
-        "rmean_4": "Smooths out weekly noise to find the 'short-term trend' in how much vaccine is being used.",
-        "rmean_12": "Provides the 'average consumption level' over the last 3 months to set a baseline for future needs.",
-        "rmean_26": "Captures long-term population growth or shifts in facility demand over the half-year.",
-        "rstd_4": "Measures how 'unpredictable' the stock has been recently. High volatility makes the AI more cautious.",
-        "rstd_12": "Tracks how stable the supply chain has been over the last quarter.",
-        "weeks_since_last_resupply": "The 'Hunger' signal. The longer since the last delivery, the more the AI expects stockout risk to climb.",
-        "log_weeks_since_resupply": "Handles the mathematical impact of extreme delivery gaps (e.g., during long road closures).",
-        "birth_seasonality_factor": "Adjusts the forecast for the 'Birth Peak' in Ethiopia—demand for BCG and Polio spikes when more babies are born.",
-        "is_rainy_season": "Detects the Kiremt season (Jun-Sep). It tells the AI to expect road delays and missed collection trips.",
-        "is_measles_sia": "The 'Demand Spike' signal. Signals the AI that vaccination demand will jump up to 8x normal levels.",
-        "is_polio_snid": "Prepares the AI for the sudden increase in doses needed during national Polio campaign days.",
-        "is_conflict_period": "Tells the AI that standard supply chains are broken. It expects zero deliveries and reduced attendance.",
-        "is_pandemic_period": "Accounts for the unique disruptions seen during global health emergencies.",
-        "demand_shock_multiplier": "A combined factor that helps the AI understand how multiple events are pushing demand up or down.",
-        "supply_shock_multiplier": "The 'Supply Block' signal. If this is zero, the AI knows no new stock can enter the building.",
-        "lead_time_multiplier": "Estimates how much 'stretch' to add to delivery times due to local disruptions.",
-        "hc_stock_lag_4": "The 'Early Warning' signal from the Health Center. If the supervisor is low, this Health Post will likely run out soon.",
-        "recent_stockout_4w": "Identifies a 'Cycle of Poverty'—facilities that ran out recently are statistically more likely to run out again.",
-        "lead_time_var_6": "Measures how unreliable the delivery truck is. High variance means the AI can't trust the delivery to arrive on time.",
+        "lag_1": f"{loc_context} the AI anchors the forecast to last week's actual stock. This prevents 'drift' and ensures the prediction remains grounded in your current reality.",
+        "lag_4": f"The AI identifies a monthly resupply rhythm. Since this is a {ftype}, it recognizes the 4-week delivery cycle common in this network.",
+        "lag_12": "Identifies quarterly patterns. The AI has noticed that vaccine usage often shifts every 3 months due to local health outreach cycles.",
+        "lag_26": "Captures half-year trends. This is often linked to seasonal migration patterns or major bi-annual health screenings.",
+        "lag_52": "Anchors the forecast to the same time last year. It remembers if you typically run low during this specific month.",
+        "rmean_4": "Filters out 'weekly noise' (random spikes) to find the true underlying demand trend over the last month.",
+        "rmean_12": "Sets a baseline using the average consumption from the last quarter, providing a stable target for future stock levels.",
+        "rmean_26": "Tracks long-term growth. If your catchment population is increasing, this feature captures that 6-month upward trend.",
+        "rstd_4": f"Measures recent uncertainty. {'Because this is a remote facility,' if is_remote else ''} high volatility here makes the AI more conservative with its stockout warnings.",
+        "rstd_12": "Tracks supply chain stability over the last quarter. Higher values indicate an unreliable delivery history.",
+        "weeks_since_last_resupply": "The 'Stockout Clock.' The more weeks that pass without a delivery, the higher the AI scores the risk of running out.",
+        "log_weeks_since_resupply": "A mathematical adjustment for long delivery gaps, common during road closures or major disruptions.",
+        "birth_seasonality_factor": f"Adjusts for Ethiopia's birth peak. Demand for infant vaccines like BCG and Polio naturally spikes in {region} during high-birth months.",
+        "is_rainy_season": f"Detects the Kiremt season (Jun-Sep). {'In remote areas like this,' if is_remote else ''} the AI expects significant delivery delays due to road conditions.",
+        "is_measles_sia": "The 'Campaign Spike.' Tells the AI that a national measles campaign is active, which can jump demand by up to 800%.",
+        "is_polio_snid": "Prepares for a Polio National Immunization Day, signaling a sudden, large-scale drawdown of doses.",
+        "is_conflict_period": "Alerts the AI that standard supply chains in this region are compromised. It expects zero incoming stock and broken logistics.",
+        "is_pandemic_period": "Adjusts for global-scale disruptions that historically affected vaccine delivery and attendance.",
+        "demand_shock_multiplier": "A combined factor tracking how external events (campaigns, shocks) are collectively pushing demand higher.",
+        "supply_shock_multiplier": "The 'Supply Gate.' If this is zero, the AI knows that no matter how much you order, nothing will arrive.",
+        "lead_time_multiplier": "Estimates the 'stretch' in delivery times. Higher values mean the delivery truck is expected to be late.",
+        "hc_stock_lag_4": f"The 'Cascade Signal.' {'Since this is a Health Post,' if ftype == 'Health Post' else 'For this facility,'} the AI monitors if the supervising center is low on stock.",
+        "recent_stockout_4w": "The 'History of Risk.' Facilities that ran out recently are statistically more likely to experience another gap soon.",
+        "lead_time_var_6": "Measures the reliability of the delivery truck. If the truck arrival time is erratic, the AI builds in a larger safety buffer.",
         "month_sin": "Helps the AI understand smooth, repeating annual cycles in weather and disease patterns.",
-        "month_cos": "A mathematical pair to Month (Sine) that helps the AI pinpoint the exact time of year.",
-        "woy_sin": "Picks up very fine-grained weekly patterns throughout the Ethiopian calendar year.",
-        "woy_cos": "Works with Week (Sine) to ensure the AI knows exactly which week of the year it is forecasting.",
-        "week": "Captures the long-term trend in vaccine usage over the years. It helps the AI account for population growth.",
+        "month_cos": "Works with Month (Sine) to help the AI pinpoint the exact time of year for its seasonal adjustments.",
+        "woy_sin": "Tracks very fine-grained weekly patterns throughout the Ethiopian calendar year.",
+        "woy_cos": "Works with Week (Sine) to ensure the AI knows exactly which week of the year it is forecasting for.",
+        "week": "Captures the long-term trend over the years, accounting for general population growth in this region.",
     }
-    return descriptions.get(feature_name, "An engineered signal that helps the AI refine its stockout predictions.")
+    return descriptions.get(feature_name, "A specialized data signal that helps the AI refine its stockout predictions based on historical patterns.")

@@ -29,8 +29,7 @@ def render_facility_map(
         .sort_values("rank", ascending=False)
         .drop_duplicates("facility_id")[["facility_id", "alert_status", "predicted_days_to_stockout", "antigen"]]
     )
-    fac_data = facilities.merge(fac_alert, on="facility_id", how="left")
-    fac_data["alert_status"] = fac_data["alert_status"].fillna("ok")
+    fac_data = facilities.merge(fac_alert, on="facility_id", how="inner")
 
     # Center on Ethiopia
     m = folium.Map(location=[9.0, 40.0], zoom_start=6, tiles="CartoDB positron")
@@ -79,4 +78,10 @@ def render_facility_map(
     """
     m.get_root().html.add_child(folium.Element(legend_html))
 
-    st_folium(m, width=None, height=480, returned_objects=[])
+    st_folium(
+        m,
+        width=None,
+        height=480,
+        returned_objects=[],
+        key=f"facility_map_{forecast_horizon}_{len(fac_data)}"
+    )

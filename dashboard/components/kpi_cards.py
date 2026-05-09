@@ -29,8 +29,6 @@ def render_kpi_cards(
 
     # ── KPI 1: Stockout alerts ──────────────────────────────────────────────
     critical_now = int((ens_latest["alert_status"] == "critical").sum())
-    critical_prev = int((ens_prev_week["alert_status"] == "critical").sum())
-    delta_critical = critical_now - critical_prev
 
     # ── KPI 2: DTP dropout rate ─────────────────────────────────────────────
     last_52_start = max(0, int(stock_ledger["week"].max()) - 51)
@@ -67,18 +65,40 @@ def render_kpi_cards(
             children_at_risk = int(at_risk_merged["weekly_consumption_baseline"].sum())
 
     # Calculate delta for children at risk
-    if ens_prev_week.empty:
-        prev_risk = 0
-    else:
-        prev_critical = ens_prev_week[ens_prev_week["alert_status"] == "critical"]
+    if forecast_horizon == 1:
+        # Compare against the very last week of actuals (week 363)
+        last_actual_week = int(stock_ledger["week"].max())
+        prev_actuals = stock_ledger[stock_ledger["week"] == last_actual_week]
+        
+        # Merge with target_population to get baseline demand for those that were critical/warning
+        # (Though 'is_stockout' is the actual alert in the ledger)
+        prev_critical = prev_actuals[prev_actuals["is_stockout"] == True]
         prev_merged = prev_critical.merge(
             target_population[["facility_id", "antigen", "weekly_consumption_baseline"]],
             on=["facility_id", "antigen"],
             how="left"
         )
         prev_risk = int(prev_merged["weekly_consumption_baseline"].sum())
+        
+        # Also compute prev_critical_count for KPI 1
+        critical_prev = int(prev_actuals["is_stockout"].sum())
+    else:
+        # Standard forecast-to-forecast comparison
+        if ens_prev_week.empty:
+            prev_risk = 0
+            critical_prev = 0
+        else:
+            prev_critical = ens_prev_week[ens_prev_week["alert_status"] == "critical"]
+            prev_merged = prev_critical.merge(
+                target_population[["facility_id", "antigen", "weekly_consumption_baseline"]],
+                on=["facility_id", "antigen"],
+                how="left"
+            )
+            prev_risk = int(prev_merged["weekly_consumption_baseline"].sum())
+            critical_prev = int((ens_prev_week["alert_status"] == "critical").sum())
     
     delta_risk = children_at_risk - prev_risk
+    delta_critical = critical_now - critical_prev
 
     # ── KPI 4: Wastage rate (last 12 weeks) ─────────────────────────────────
     from utils.db import get_connection
@@ -154,7 +174,7 @@ def render_kpi_cards(
         )
         if not np.isnan(dropout_rate):
             color = "🔴" if dropout_rate > 0.10 else ("🟡" if dropout_rate > 0.05 else "🟢")
-            st.caption(f"{color} WHO acceptable < 10%")
+            st.caption(f"{color} WHO acceptable < 10% (Last 12m Actual)")
 
     with col3:
         st.metric(
@@ -174,7 +194,7 @@ def render_kpi_cards(
             delta="WHO benchmark: 10%",
             delta_color="off",
         )
-        st.caption(f"{color} Last 12 weeks (Actual)")
+        st.caption(f"{color} Last 12 weeks Actual (Static)")
 
     with col5:
         st.metric(

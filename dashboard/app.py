@@ -160,6 +160,7 @@ def filter_forecast(fo):
     return fo[mask]
 
 fo_filtered = filter_forecast(forecast_output)
+fac_filtered = facilities[facilities["access_tier"].isin(selected_tiers)]
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -185,7 +186,7 @@ if view == "🌍 National Overview":
         from dashboard.components.facility_map import render_facility_map
         from dashboard.components.alert_table import render_alert_table
 
-        render_kpi_cards(stock_ledger, fo_filtered, target_population, facilities,
+        render_kpi_cards(stock_ledger, fo_filtered, target_population, fac_filtered,
                          forecast_horizon=forecast_horizon)
 
         st.divider()
@@ -206,11 +207,11 @@ if view == "🌍 National Overview":
         # Centre the map at ~80% width using a 3-column layout
         _, mid_col, _ = st.columns([1, 6, 1])
         with mid_col:
-            render_facility_map(facilities, fo_filtered, forecast_horizon=forecast_horizon)
+            render_facility_map(fac_filtered, fo_filtered, forecast_horizon=forecast_horizon)
 
         st.divider()
         st.subheader("Active Alerts")
-        render_alert_table(fo_filtered, facilities, clusters,
+        render_alert_table(fo_filtered, fac_filtered, clusters,
                            forecast_horizon=forecast_horizon)
 
 # ════════════════════════════════════════════════════════════════════════════
