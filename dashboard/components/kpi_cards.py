@@ -153,7 +153,7 @@ def render_kpi_cards(
 
     with col1:
         st.metric(
-            label="🚨 Predicted Critical Alerts",
+            label="Predicted Critical Alerts",
             value=critical_now,
             delta=f"{delta_critical:+d} vs prev week",
             delta_color="inverse",
@@ -167,7 +167,7 @@ def render_kpi_cards(
             dtp_display = f"{dropout_rate * 100:.1f}%"
             dtp_delta = "WHO threshold: 10%" if dropout_rate > 0.10 else "Within WHO threshold"
         st.metric(
-            label="💉 DTP3 Dropout Rate",
+            label="DTP3 Dropout Rate",
             value=dtp_display,
             delta=dtp_delta,
             delta_color="off",
@@ -178,7 +178,7 @@ def render_kpi_cards(
 
     with col3:
         st.metric(
-            label="👶 Predicted Children at Risk",
+            label="Predicted Children at Risk",
             value=f"{children_at_risk:,}",
             delta=f"{delta_risk:+d} vs prev week",
             delta_color="inverse",
@@ -189,7 +189,7 @@ def render_kpi_cards(
         wrate_pct = wastage_rate * 100
         color = "🔴" if wrate_pct > 10 else ("🟡" if wrate_pct > 7 else "🟢")
         st.metric(
-            label="🗑️ Vaccine Wastage Rate",
+            label="Vaccine Wastage Rate",
             value=f"{wrate_pct:.1f}%",
             delta="WHO benchmark: 10%",
             delta_color="off",
@@ -198,7 +198,7 @@ def render_kpi_cards(
 
     with col5:
         st.metric(
-            label="⚡ Resupply Urgency Score",
+            label="Resupply Urgency Score",
             value=f"{urgency_score:.0f} / 100",
             delta="Higher = more urgent",
             delta_color="off",

@@ -373,7 +373,6 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     # ── Navigation ───────────────────────────────────────────
-    st.markdown('<p style="color:#475569; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; padding: 0.75rem 0.25rem 0.4rem;">Navigation</p>', unsafe_allow_html=True)
     view = st.radio(
         "Navigation",
         ["National Overview", "Facility Drill-Down", "Cascade View", "Model Performance"],
