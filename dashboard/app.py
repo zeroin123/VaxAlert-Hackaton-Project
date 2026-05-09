@@ -160,6 +160,7 @@ def filter_forecast(fo):
     return fo[mask]
 
 fo_filtered = filter_forecast(forecast_output)
+fac_filtered = facilities[facilities["access_tier"].isin(selected_tiers)]
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -185,7 +186,7 @@ if view == "🌍 National Overview":
         from dashboard.components.facility_map import render_facility_map
         from dashboard.components.alert_table import render_alert_table
 
-        render_kpi_cards(stock_ledger, fo_filtered, target_population, facilities,
+        render_kpi_cards(stock_ledger, fo_filtered, target_population, fac_filtered,
                          forecast_horizon=forecast_horizon)
 
         st.divider()
@@ -206,11 +207,11 @@ if view == "🌍 National Overview":
         # Centre the map at ~80% width using a 3-column layout
         _, mid_col, _ = st.columns([1, 6, 1])
         with mid_col:
-            render_facility_map(facilities, fo_filtered, forecast_horizon=forecast_horizon)
+            render_facility_map(fac_filtered, fo_filtered, forecast_horizon=forecast_horizon)
 
         st.divider()
         st.subheader("Active Alerts")
-        render_alert_table(fo_filtered, facilities, clusters,
+        render_alert_table(fo_filtered, fac_filtered, clusters,
                            forecast_horizon=forecast_horizon)
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -413,6 +414,15 @@ elif view == "📊 Model Performance":
             summary["SDR (%)"] = (summary["SDR (%)"] * 100).round(1)
             summary["False Alert (%)"] = (summary["False Alert (%)"] * 100).round(1)
             st.dataframe(summary, use_container_width=True)
+            
+            with st.expander("📖 Metric Definitions & How to Interpret This Table"):
+                st.markdown("""
+                - **MAE (Mean Absolute Error)**: The average 'miss' in doses. For example, an MAE of 10.5 means the AI's prediction is typically off by ~10 doses. **Lower is better.**
+                - **MAPE (Mean Absolute Percentage Error)**: The average error as a percentage of the actual stock. This helps compare accuracy across facilities with very different volumes. **Lower is better.**
+                - **Interval Cov. (Interval Coverage)**: Measures the reliability of the 'shaded range' you see in charts. We aim for 80%—if it's 80%, the actual stock stays inside our predicted range 8 out of 10 times.
+                - **SDR (Stockout Detection Rate)**: **The most important operational metric.** It shows the % of actual stockouts that the AI correctly 'saw coming' at least 1 week in advance. **Higher is better.**
+                - **False Alert (%)**: The % of time the AI fires a 'Critical' alert but the facility does *not* actually run out. We keep this low to prevent 'alert fatigue' for supply chain officers. **Lower is better.**
+                """)
 
         cv_df = model_metrics[model_metrics["fold"].isin(["1", "2", "3"])].copy()
         if not cv_df.empty:
