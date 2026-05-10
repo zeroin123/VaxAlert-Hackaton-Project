@@ -32,78 +32,189 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Custom Design System (CSS) ──────────────────────────────────────────────
+# ── Production Design System (CSS) ─────────────────────────────────────────
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    html, body, [class*="css"]  {
-        font-family: 'Inter', sans-serif;
+    /* ── Base ──────────────────────────────────────────────── */
+    html, body, [class*="css"], .stMarkdown, .stText, p, span, div {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* Main background */
-    [data-testid="stAppViewContainer"] {
-        background-color: #f9fafb;
+    [data-testid="stAppViewContainer"] > .main {
+        background-color: #f8fafc;
     }
-    
-    /* Header styling */
-    .main-header {
-        background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
-        padding: 1.5rem 2rem;
+
+    [data-testid="block-container"] {
+        padding-top: 2rem;
+        padding-bottom: 4rem;
+    }
+
+    /* ── Sidebar ────────────────────────────────────────────── */
+    [data-testid="stSidebar"] {
+        background-color: #0f172a;
+        border-right: none;
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #cbd5e1;
+    }
+
+    [data-testid="stSidebar"] .stMarkdown p,
+    [data-testid="stSidebar"] .stMarkdown span {
+        color: #94a3b8;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+    }
+
+    /* Sidebar radio nav buttons */
+    [data-testid="stSidebar"] [data-testid="stRadio"] label {
+        display: block;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        color: #94a3b8 !important;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+        background-color: rgba(255,255,255,0.06);
+        color: #e2e8f0 !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stRadio"] label[data-checked="true"],
+    [data-testid="stSidebar"] [data-testid="stRadio"] [aria-checked="true"] + label {
+        background-color: rgba(59, 130, 246, 0.18);
+        color: #93c5fd !important;
+        font-weight: 600;
+    }
+
+    /* Sidebar filter labels */
+    [data-testid="stSidebar"] .stMultiSelect label,
+    [data-testid="stSidebar"] .stSlider label,
+    [data-testid="stSidebar"] .stSelectbox label {
+        color: #94a3b8 !important;
+        font-size: 0.75rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+    }
+
+    /* Sidebar multiselect tags */
+    [data-testid="stSidebar"] [data-baseweb="tag"] {
+        background-color: rgba(59, 130, 246, 0.2) !important;
+        border: 1px solid rgba(59, 130, 246, 0.3) !important;
+    }
+
+    [data-testid="stSidebar"] [data-baseweb="tag"] span {
+        color: #93c5fd !important;
+        font-size: 0.75rem !important;
+    }
+
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.08);
+    }
+
+    [data-testid="stSidebar"] .stCaption {
+        color: #475569 !important;
+        font-size: 0.7rem !important;
+    }
+
+    /* ── Page Header ────────────────────────────────────────── */
+    .page-header {
+        padding: 2rem 2.5rem;
+        background: #ffffff;
         border-radius: 16px;
-        color: white;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    
-    .main-header h1 {
-        color: white !important;
-        margin: 0;
-        font-weight: 700;
-        font-size: 2rem;
-    }
-    
-    .main-header p {
-        margin: 0.5rem 0 0 0;
-        opacity: 0.9;
-        font-size: 1rem;
-    }
-
-    /* KPI Card styling override */
-    [data-testid="stMetric"] {
-        background-color: white !important;
-        padding: 1.5rem !important;
-        border-radius: 20px !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
-        border: 1px solid #f1f5f9 !important;
-        transition: transform 0.2s, box-shadow 0.2s !important;
-    }
-    
-    [data-testid="stMetric"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-    }
-    
-    [data-testid="stMetricValue"] {
-        font-size: 2.25rem !important;
-        letter-spacing: -0.025em !important;
-    }
-
-    /* Table styling */
-    .stDataFrame {
         border: 1px solid #e2e8f0;
+        margin-bottom: 2rem;
+        border-left: 4px solid #2563eb;
+    }
+
+    .page-header h1 {
+        margin: 0 0 0.4rem 0;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.025em;
+    }
+
+    .page-header p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 400;
+        line-height: 1.6;
+    }
+
+    /* ── KPI Cards ──────────────────────────────────────────── */
+    [data-testid="stMetric"] {
+        background-color: #ffffff !important;
+        padding: 1.5rem 1.75rem !important;
+        border-radius: 12px !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04) !important;
+        border: 1px solid #e2e8f0 !important;
+        transition: box-shadow 0.2s ease !important;
+    }
+
+    [data-testid="stMetric"]:hover {
+        box-shadow: 0 4px 20px rgba(37,99,235,0.1) !important;
+        border-color: #bfdbfe !important;
+    }
+
+    [data-testid="stMetricLabel"] > div {
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        color: #64748b !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    [data-testid="stMetricValue"] {
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+        letter-spacing: -0.03em !important;
+        line-height: 1.2 !important;
+    }
+
+    [data-testid="stMetricDelta"] {
+        font-size: 0.8rem !important;
+        font-weight: 500 !important;
+    }
+
+    /* ── Section Cards ──────────────────────────────────────── */
+    .section-card {
+        background-color: #ffffff;
+        padding: 2rem 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1.75rem;
+    }
+
+    /* ── DataFrames / Tables ────────────────────────────────── */
+    [data-testid="stDataFrame"] {
         border-radius: 12px;
         overflow: hidden;
+        border: 1px solid #e2e8f0;
     }
 
-    /* Sidebar clean-up */
-    [data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #f1f5f9;
+    /* ── Expander ───────────────────────────────────────────── */
+    [data-testid="stExpander"] {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        background: #ffffff;
     }
-    
-    [data-testid="stSidebarNav"] {
-        padding-top: 1rem;
+
+    [data-testid="stExpander"] summary {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
     }
 
     /* Chart containers */
@@ -115,7 +226,7 @@ st.markdown("""
         border: 1px solid #f1f5f9;
         margin-bottom: 2rem;
     }
-    
+
     .chart-container h3 {
         margin-top: 0;
         font-weight: 700;
@@ -123,23 +234,61 @@ st.markdown("""
         letter-spacing: -0.01em;
     }
 
-    /* Tabs styling refined */
+    /* ── Dividers ───────────────────────────────────────────── */
+    hr {
+        border-color: #f1f5f9 !important;
+        margin: 1.5rem 0 !important;
+    }
+
+    /* ── Tabs ───────────────────────────────────────────────── */
     .stTabs [data-baseweb="tab-list"] {
-        padding: 4px;
         background-color: #f1f5f9;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
+        border-radius: 10px;
+        padding: 3px;
+        gap: 2px;
+        border-bottom: none !important;
     }
 
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px !important;
-        transition: all 0.2s !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        color: #64748b !important;
+        padding: 0.5rem 1.25rem !important;
+        transition: all 0.15s !important;
+        background: transparent !important;
+        border: none !important;
     }
 
     .stTabs [aria-selected="true"] {
-        background-color: white !important;
+        background-color: #ffffff !important;
         color: #1d4ed8 !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important;
+        font-weight: 600 !important;
+    }
+
+    /* ── Sliders ────────────────────────────────────────────── */
+    [data-testid="stSidebar"] [data-testid="stSlider"] [data-baseweb="slider"] div {
+        background-color: #3b82f6;
+    }
+
+    /* ── Subheadings ────────────────────────────────────────── */
+    h2, h3 {
+        color: #0f172a;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+
+    /* ── Captions ───────────────────────────────────────────── */
+    .stCaption {
+        color: #94a3b8 !important;
+        font-size: 0.78rem !important;
+    }
+
+    /* ── Info / Warning / Success boxes ─────────────────────── */
+    [data-testid="stAlert"] {
+        border-radius: 10px !important;
+        border: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -225,25 +374,32 @@ feature_importance = load_feature_importance()
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.sidebar.markdown("""
-        <div style="text-align: center; padding: 1.5rem 0.5rem; background: #f9fafb; border-radius: 16px; margin-bottom: 2rem; border: 1px solid #e5e7eb;">
-            <img src="https://raw.githubusercontent.com/stevenrskelton/flag-icon/master/png/75/country-4x3/et.png" width="45" style="margin-bottom: 1rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h2 style="margin:0; color:#1e3a8a; font-size: 1.5rem; font-weight: 700;">VaxAlert</h2>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; font-weight: 500;">Ethiopia EPI Alert System</p>
+    # ── Logo / Brand ─────────────────────────────────────────
+    st.markdown("""
+        <div style="padding: 1.75rem 1.25rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 0.5rem;">
+            <div style="display:flex; align-items:center; gap: 0.75rem;">
+                <div style="width:36px; height:36px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border-radius: 9px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <div>
+                    <div style="color:#f8fafc; font-size:1.1rem; font-weight:700; letter-spacing:-0.02em; line-height:1.2;">VaxAlert</div>
+                    <div style="color:#475569; font-size:0.7rem; font-weight:500; text-transform:uppercase; letter-spacing:0.06em;">Ethiopia EPI System</div>
+                </div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
-    st.divider()
 
+    # ── Navigation ───────────────────────────────────────────
     view = st.radio(
         "Navigation",
-        ["🌍 National Overview", "🏥 Facility Drill-Down",
-         "🔗 Cascade View", "📊 Model Performance"],
+        ["National Overview", "Facility Drill-Down", "Cascade View", "Model Performance"],
         label_visibility="collapsed",
     )
-    st.divider()
 
-    # Global filters
-    st.subheader("Filters")
+    st.markdown('<div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 1rem 0;"></div>', unsafe_allow_html=True)
+
+    # ── Filters ──────────────────────────────────────────────
+    st.markdown('<p style="color:#475569; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; padding-bottom: 0.5rem;">Filters</p>', unsafe_allow_html=True)
     all_antigens = sorted(vaccines["antigen_code"].tolist())
     selected_antigens = st.multiselect("Antigen", all_antigens, default=all_antigens)
 
@@ -257,7 +413,7 @@ with st.sidebar:
 
     forecast_horizon = st.slider("Forecast Horizon (weeks)", 1, 8, 8)
 
-    st.divider()
+    st.markdown('<div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 1rem 0;"></div>', unsafe_allow_html=True)
     st.caption("Data: synthetic · 30 facilities · 7 antigens · 7 years (364 weeks)")
 
 # Filter forecast_output based on sidebar selections
@@ -291,14 +447,13 @@ def no_forecast_warning():
 # VIEW 1: National Overview
 # ════════════════════════════════════════════════════════════════════════════
 
-if view == "🌍 National Overview":
+if view == "National Overview":
     st.markdown("""
-    <div class="main-header">
-        <h1>🌍 National Overview</h1>
+    <div class="page-header">
+        <h1>National Overview</h1>
         <p>Real-time vaccine stockout risk and predictive analytics across Ethiopia's EPI network.</p>
     </div>
     """, unsafe_allow_html=True)
-    st.caption("Real-time vaccine stockout risk across Ethiopia's EPI network")
 
     if forecast_output.empty:
         no_forecast_warning()
@@ -310,7 +465,7 @@ if view == "🌍 National Overview":
         render_kpi_cards(stock_ledger, fo_filtered, target_population, fac_filtered,
                          forecast_horizon=forecast_horizon)
 
-        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("Facility Alert Map")
         # Show the user which forecast week the map represents
         if not forecast_output.empty:
@@ -320,14 +475,14 @@ if view == "🌍 National Overview":
             if not target_row.empty:
                 target_date_str = display_date(target_row["forecast_date"].iloc[0]).strftime("%Y-%m-%d")
                 st.caption(
-                    f"📅 Showing forecast for **week {target_wk}** ({target_date_str}). "
-                    f"Adjust the **Forecast Horizon** slider in the sidebar (1 = next week, 8 = 8 weeks ahead)."
+                    f"Showing forecast for week {target_wk} ({target_date_str}). "
+                    f"Adjust the Forecast Horizon slider in the sidebar."
                 )
 
         render_facility_map(fac_filtered, fo_filtered, forecast_horizon=forecast_horizon)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("Active Alerts & Risk Summary")
         render_alert_table(fo_filtered, fac_filtered,
                            forecast_horizon=forecast_horizon)
@@ -337,10 +492,10 @@ if view == "🌍 National Overview":
 # VIEW 2: Facility Drill-Down
 # ════════════════════════════════════════════════════════════════════════════
 
-elif view == "🏥 Facility Drill-Down":
+elif view == "Facility Drill-Down":
     st.markdown("""
-    <div class="main-header">
-        <h1>🏥 Facility Drill-Down</h1>
+    <div class="page-header">
+        <h1>Facility Drill-Down</h1>
         <p>Deep-dive into facility-level inventory trends, AI explainability, and historical shocks.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -392,7 +547,7 @@ elif view == "🏥 Facility Drill-Down":
             ens_weights["w_prophet"] = float(ens_row.iloc[0]["w_prophet"] or 0.5)
             val_mae = float(ens_row.iloc[0]["mae"] or 0.0)
 
-    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     if not series.empty:
         from dashboard.components.stock_chart import render_stock_chart
         render_stock_chart(
@@ -411,13 +566,13 @@ elif view == "🏥 Facility Drill-Down":
 
     # ── Per-facility feature importance ──────────────────────────────────────
     if not feature_importance.empty:
-        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
         from dashboard.components.feature_importance_panel import render_feature_importance_panel
         render_feature_importance_panel(sel_fid, sel_fac["name"], feature_importance)
         st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Delivery timeline ────────────────────────────────────────────────────
-    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.subheader("Resupply Delivery History")
     deliveries = load_delivery(sel_fid, sel_ant)
     if not deliveries.empty:
@@ -486,14 +641,13 @@ elif view == "🏥 Facility Drill-Down":
 # VIEW 3: Cascade View
 # ════════════════════════════════════════════════════════════════════════════
 
-elif view == "🔗 Cascade View":
+elif view == "Cascade View":
     st.markdown("""
-    <div class="main-header">
-        <h1>🔗 Cascade Network View</h1>
+    <div class="page-header">
+        <h1>Cascade Network View</h1>
         <p>Visualize supply chain dependencies and simulate the impact of early resupply interventions.</p>
     </div>
     """, unsafe_allow_html=True)
-    st.caption("Stockout propagation from Health Centers to satellite Health Posts")
 
     hc_facilities = facilities[facilities["type"] == "Health Center"]
     hc_options = hc_facilities[["facility_id", "name"]].copy()
@@ -520,10 +674,10 @@ elif view == "🔗 Cascade View":
 # VIEW 4: Model Performance
 # ════════════════════════════════════════════════════════════════════════════
 
-elif view == "📊 Model Performance":
+elif view == "Model Performance":
     st.markdown("""
-    <div class="main-header">
-        <h1>📊 Model Performance</h1>
+    <div class="page-header">
+        <h1>Model Performance</h1>
         <p>Transparency into the accuracy, reliability, and error metrics of our ensemble forecasting engine.</p>
     </div>
     """, unsafe_allow_html=True)
