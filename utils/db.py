@@ -110,6 +110,7 @@ def write_forecasts(forecast_df: pd.DataFrame):
                 yhat_lower REAL,
                 yhat_upper REAL,
                 predicted_days_to_stockout INT,
+                alert_threshold_days INT,
                 alert_status TEXT,
                 ensemble_w_sarimax REAL,
                 ensemble_w_prophet REAL,

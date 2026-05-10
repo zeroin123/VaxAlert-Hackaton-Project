@@ -111,10 +111,16 @@ def render_kpi_cards(
             total_admin = recent_sessions["doses_administered"].sum()
             total_wasted = recent_sessions["doses_wasted"].sum()
             wastage_rate = total_wasted / max(total_admin + total_wasted, 1)
+            ag = recent_sessions.groupby("antigen")[["doses_administered", "doses_wasted"]].sum()
+            ag["Wastage %"] = (ag["doses_wasted"] / (ag["doses_administered"] + ag["doses_wasted"]).clip(lower=1) * 100).round(1)
+            antigen_wastage_df = ag[["Wastage %"]].reset_index().rename(columns={"antigen": "Antigen"})
+            antigen_wastage_df = antigen_wastage_df.sort_values("Wastage %", ascending=False).reset_index(drop=True)
         else:
             wastage_rate = 0.0
+            antigen_wastage_df = pd.DataFrame()
 
     # ── KPI 5: Resupply urgency score ────────────────────────────────────────
+    # Raw score for the current forecast week
     at_risk = ens_latest[ens_latest["alert_status"].isin(["critical", "warning"])].copy()
     if not at_risk.empty:
         merged = at_risk.merge(
@@ -127,24 +133,72 @@ def render_kpi_cards(
         raw_scores = (1.0 / dts_safe) * (lt / 7.0) * (ti / 100.0)
         weekly_sum = float(raw_scores.sum())
 
-        # Compute historical weekly sums for normalisation
-        all_ens = forecast_output[forecast_output["model"] == "ensemble"].copy()
-        all_at_risk = all_ens[all_ens["alert_status"].isin(["critical", "warning"])].copy()
-        if not all_at_risk.empty:
-            grp = all_at_risk.merge(
-                facilities[["facility_id", "lead_time_days_mean", "target_infants_annual"]],
-                on="facility_id", how="left"
-            )
-            dts2 = grp["predicted_days_to_stockout"].clip(lower=1)
-            lt2 = grp["lead_time_days_mean"].fillna(14.0)
-            ti2 = grp["target_infants_annual"].fillna(5000)
-            raw2 = (1.0 / dts2) * (lt2 / 7.0) * (ti2 / 100.0)
-            hist_weekly = raw2.groupby(all_at_risk["forecast_week"].values).sum()
-            p95 = float(np.percentile(hist_weekly.values, 95)) if len(hist_weekly) > 0 else max(weekly_sum, 1)
-        else:
-            p95 = max(weekly_sum, 1)
+        # ── Normalise against last 52 weeks of actual stock ledger ──────────
+        # This anchors the score to real operational history rather than just
+        # the 8-week forecast horizon (which produced an artificially inflated
+        # score because p95 of 8 values ≈ the maximum of those 8 values).
+        #
+        # Historical DTS is estimated from the stock ledger as:
+        #   hist_dts_days = (closing_stock / weekly_consumption_baseline) * 7
+        # Then we apply the same raw score formula and take p95 of the
+        # resulting 52 weekly sums — giving a stable, seasonally-grounded
+        # baseline that only includes normal operational conditions (post-conflict,
+        # post-pandemic weeks are not in the last 52).
+        hist_start = max(0, int(stock_ledger["week"].max()) - 51)
+        hist_sl = stock_ledger[stock_ledger["week"] >= hist_start].copy()
 
-        urgency_score = min(100.0, (weekly_sum / max(p95, 1e-9)) * 100.0)
+        # Merge lead time and target infants onto the stock ledger
+        hist_sl = hist_sl.merge(
+            facilities[["facility_id", "lead_time_days_mean", "target_infants_annual"]],
+            on="facility_id", how="left"
+        )
+        # Merge weekly_consumption_baseline from target_population
+        hist_sl = hist_sl.merge(
+            target_population[["facility_id", "antigen", "weekly_consumption_baseline"]],
+            on=["facility_id", "antigen"], how="left"
+        )
+
+        # Compute retrospective DTS and alert classification
+        hist_sl["hist_dts_days"] = (
+            hist_sl["closing_stock"] /
+            hist_sl["weekly_consumption_baseline"].clip(lower=0.1)
+        ) * 7
+
+        # Classify historical rows using the same threshold logic as forecasts:
+        # critical threshold = lead_time + safety_buffer; warning = critical × 1.5
+        # Use a simplified fixed safety buffer of 14 days for historical rows
+        # (cv_mae is not available per-week historically)
+        # Mirror generate_forecasts.py: threshold T = lead_time + safety_buffer
+        # critical → DTS ≤ T×0.5 / warning → DTS ≤ T / ok → DTS > T
+        hist_sl["thresh"] = hist_sl["lead_time_days_mean"].fillna(14.0) + 14.0
+        hist_sl["hist_alert"] = "ok"
+        hist_sl.loc[hist_sl["hist_dts_days"] <= hist_sl["thresh"],       "hist_alert"] = "warning"
+        hist_sl.loc[hist_sl["hist_dts_days"] <= hist_sl["thresh"] * 0.5, "hist_alert"] = "critical"
+
+        # Only use WARNING rows (not critical) for p95.
+        # Historical critical rows have closing_stock ≈ 0 → hist_dts clipped to
+        # 1 day → raw scores 10-100× larger than any forecast warning row (which
+        # has DTS ≥ thresh_critical ≈ 35+ days). Including them would make p95
+        # so high that every forecast warning week scores near zero.
+        # The right question is: "how do current warnings compare to typical
+        # warning situations in recent history?" — not against actual past stockouts.
+        hist_at_risk = hist_sl[hist_sl["hist_alert"] == "warning"].copy()
+
+        if not hist_at_risk.empty:
+            h_dts = hist_at_risk["hist_dts_days"].clip(lower=1)
+            h_lt  = hist_at_risk["lead_time_days_mean"].fillna(14.0)
+            h_ti  = hist_at_risk["target_infants_annual"].fillna(5000)
+            hist_raw = (1.0 / h_dts) * (h_lt / 7.0) * (h_ti / 100.0)
+            hist_weekly_sums = hist_raw.groupby(hist_at_risk["week"].values).sum()
+            # Fill weeks where no facility was in warning-only state with 0
+            all_hist_weeks = pd.Series(0.0, index=range(hist_start, int(stock_ledger["week"].max()) + 1))
+            all_hist_weeks.update(hist_weekly_sums)
+            p95 = float(np.percentile(all_hist_weeks.values, 95))
+            p95 = max(p95, 1e-9)
+        else:
+            p95 = max(weekly_sum, 1e-9)
+
+        urgency_score = min(100.0, (weekly_sum / p95) * 100.0)
     else:
         urgency_score = 0.0
 
@@ -194,7 +248,17 @@ def render_kpi_cards(
             delta="WHO benchmark: 10%",
             delta_color="off",
         )
-        st.caption(f"{color} Last 12 weeks Actual (Static)")
+        st.caption(f"{color} Last 12 weeks · by antigen below")
+        if not antigen_wastage_df.empty:
+            def _color_wrate(val):
+                if val > 10: return "color: #e74c3c; font-weight: 600"
+                if val > 7:  return "color: #e67e22; font-weight: 600"
+                return "color: #27ae60; font-weight: 600"
+            with st.expander("By antigen"):
+                st.dataframe(
+                    antigen_wastage_df.style.map(_color_wrate, subset=["Wastage %"]),
+                    use_container_width=True, hide_index=True, height=264,
+                )
 
     with col5:
         st.metric(
@@ -203,4 +267,4 @@ def render_kpi_cards(
             delta="Higher = more urgent",
             delta_color="off",
         )
-        st.caption("Future priority index")
+        st.caption("vs. last 52 weeks · warning + critical facilities")

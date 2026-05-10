@@ -2,16 +2,18 @@ import pandas as pd
 import streamlit as st
 
 
-def _build_display(merged: pd.DataFrame, hp_ids: set) -> pd.DataFrame:
+def _build_display(merged: pd.DataFrame) -> pd.DataFrame:
     merged = merged.copy()
-    merged["Cascades"] = merged["facility_id"].apply(lambda x: "Yes" if x in hp_ids else "No")
+    merged["Margin (days)"] = merged["predicted_days_to_stockout"] - merged["alert_threshold_days"]
     display = merged[[
         "name", "type", "region", "antigen",
-        "predicted_days_to_stockout", "lead_time_days_mean", "Cascades",
+        "predicted_days_to_stockout", "lead_time_days_mean",
+        "alert_threshold_days", "Margin (days)",
     ]].copy()
     display.columns = [
         "Facility", "Type", "Region", "Antigen",
-        "Days to Stockout", "Lead Time (days)", "Cascades",
+        "Days to Stockout", "Lead Time (days)",
+        "Threshold (days)", "Margin (days)",
     ]
     return display.sort_values("Days to Stockout", ascending=True).reset_index(drop=True)
 
@@ -19,7 +21,6 @@ def _build_display(merged: pd.DataFrame, hp_ids: set) -> pd.DataFrame:
 def render_alert_table(
     forecast_output: pd.DataFrame,
     facilities: pd.DataFrame,
-    clusters: pd.DataFrame,
     forecast_horizon: int = 1,
 ):
     """Two stacked tables - Critical first (most urgent), then Warning.
@@ -44,7 +45,6 @@ def render_alert_table(
                     "lead_time_days_mean"]],
         on="facility_id", how="left",
     )
-    hp_ids = set(clusters["hp_id"].unique())
 
     critical = merged[merged["alert_status"] == "critical"]
     warning = merged[merged["alert_status"] == "warning"]
@@ -58,7 +58,7 @@ def render_alert_table(
     if critical.empty:
         st.caption("No critical alerts.")
     else:
-        crit_display = _build_display(critical, hp_ids)
+        crit_display = _build_display(critical)
         styled_crit = crit_display.style.set_properties(
             **{"background-color": "#fde8e8", "color": "#c0392b", "font-weight": "600"},
             subset=["Days to Stockout"],
@@ -80,7 +80,7 @@ def render_alert_table(
     if warning.empty:
         st.caption("No warning-level alerts.")
     else:
-        warn_display = _build_display(warning, hp_ids)
+        warn_display = _build_display(warning)
         styled_warn = warn_display.style.set_properties(
             **{"background-color": "#fef9e7", "color": "#e67e22", "font-weight": "600"},
             subset=["Days to Stockout"],

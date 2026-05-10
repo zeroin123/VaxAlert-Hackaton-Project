@@ -124,6 +124,7 @@ def _make_forecast_rows(
     # weekly_consumption_baseline (a true rate), not the forecast yhat
     # (which is a stock level — different unit).
     burn_rate = max(weekly_consumption, 0.1)  # doses per week
+    alert_threshold_days = int(lead_time + max(cv_mae_weeks * 7, 5.0))  # same for all 8 weeks
     for i in range(len(yhat)):
         if burn_rate > 0:
             predicted_dts = max(0, int(float(yhat[i]) / burn_rate * 7))
@@ -141,6 +142,7 @@ def _make_forecast_rows(
             "yhat_lower": round(float(yhat_lower[i]), 2),
             "yhat_upper": round(float(yhat_upper[i]), 2),
             "predicted_days_to_stockout": predicted_dts,
+            "alert_threshold_days": alert_threshold_days,
             "alert_status": alert,
             "ensemble_w_sarimax": w_sarimax,    # repurposed: stores w_xgb
             "ensemble_w_prophet": w_prophet,

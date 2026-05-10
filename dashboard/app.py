@@ -109,7 +109,7 @@ st.markdown("""
     /* Chart containers */
     .chart-container {
         background-color: white;
-        padding: 2rem;
+        padding: 1rem;
         border-radius: 24px;
         box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
         border: 1px solid #f1f5f9;
@@ -229,7 +229,7 @@ with st.sidebar:
         <div style="text-align: center; padding: 1.5rem 0.5rem; background: #f9fafb; border-radius: 16px; margin-bottom: 2rem; border: 1px solid #e5e7eb;">
             <img src="https://raw.githubusercontent.com/stevenrskelton/flag-icon/master/png/75/country-4x3/et.png" width="45" style="margin-bottom: 1rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <h2 style="margin:0; color:#1e3a8a; font-size: 1.5rem; font-weight: 700;">VaxAlert</h2>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; font-weight: 500;">Ethiopia EPI System</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; font-weight: 500;">Ethiopia EPI Alert System</p>
         </div>
     """, unsafe_allow_html=True)
     st.divider()
@@ -329,7 +329,7 @@ if view == "🌍 National Overview":
 
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
         st.subheader("Active Alerts & Risk Summary")
-        render_alert_table(fo_filtered, fac_filtered, clusters,
+        render_alert_table(fo_filtered, fac_filtered,
                            forecast_horizon=forecast_horizon)
         st.markdown('</div>', unsafe_allow_html=True)
 
