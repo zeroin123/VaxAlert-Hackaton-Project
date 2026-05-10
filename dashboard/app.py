@@ -47,8 +47,8 @@ st.markdown("""
     }
 
     [data-testid="block-container"] {
-        padding-top: 2rem;
-        padding-bottom: 4rem;
+        padding-top: 1rem;
+        padding-bottom: 2rem;
     }
 
     /* ── Sidebar ────────────────────────────────────────────── */
@@ -72,7 +72,9 @@ st.markdown("""
 
     /* Sidebar radio nav buttons */
     [data-testid="stSidebar"] [data-testid="stRadio"] label {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
         padding: 0.6rem 1rem;
         border-radius: 8px;
         color: #94a3b8 !important;
@@ -105,14 +107,20 @@ st.markdown("""
         font-weight: 600;
     }
 
+    /* Sidebar multiselect input box */
+    [data-testid="stSidebar"] [data-baseweb="select"] > div:first-child {
+        background-color: rgba(255,255,255,0.08) !important;
+        border-color: rgba(255,255,255,0.18) !important;
+    }
+
     /* Sidebar multiselect tags */
     [data-testid="stSidebar"] [data-baseweb="tag"] {
-        background-color: rgba(59, 130, 246, 0.2) !important;
-        border: 1px solid rgba(59, 130, 246, 0.3) !important;
+        background-color: rgba(255,255,255,0.15) !important;
+        border: 1px solid rgba(255,255,255,0.25) !important;
     }
 
     [data-testid="stSidebar"] [data-baseweb="tag"] span {
-        color: #93c5fd !important;
+        color: #f1f5f9 !important;
         font-size: 0.75rem !important;
     }
 
@@ -190,7 +198,7 @@ st.markdown("""
     /* ── Section Cards ──────────────────────────────────────── */
     .section-card {
         background-color: #ffffff;
-        padding: 2rem 2.5rem;
+        padding: 1rem 1.5rem;
         border-radius: 16px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
         border: 1px solid #e2e8f0;
@@ -220,7 +228,7 @@ st.markdown("""
     /* Chart containers */
     .chart-container {
         background-color: white;
-        padding: 1rem;
+        padding: 0.5rem;
         border-radius: 24px;
         box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
         border: 1px solid #f1f5f9;
@@ -268,8 +276,15 @@ st.markdown("""
     }
 
     /* ── Sliders ────────────────────────────────────────────── */
+    /* Neutralise every div inside the slider (overrides Streamlit inline fill colour) */
     [data-testid="stSidebar"] [data-testid="stSlider"] [data-baseweb="slider"] div {
-        background-color: #3b82f6;
+        background-color: rgba(255,255,255,0.10) !important;
+    }
+    /* Restore the thumb itself to a visible but muted slate */
+    [data-testid="stSidebar"] [data-testid="stSlider"] div[role="slider"] {
+        background-color: #64748b !important;
+        border-color: #94a3b8 !important;
+        box-shadow: 0 0 0 3px rgba(100,116,139,0.25) !important;
     }
 
     /* ── Subheadings ────────────────────────────────────────── */
@@ -383,7 +398,7 @@ with st.sidebar:
                 </div>
                 <div>
                     <div style="color:#f8fafc; font-size:1.1rem; font-weight:700; letter-spacing:-0.02em; line-height:1.2;">VaxAlert</div>
-                    <div style="color:#475569; font-size:0.7rem; font-weight:500; text-transform:uppercase; letter-spacing:0.06em;">Ethiopia EPI System</div>
+                    <div style="color:#475569; font-size:0.7rem; font-weight:500; text-transform:uppercase; letter-spacing:0.06em;">Ethiopia EPI Alert System</div>
                 </div>
             </div>
         </div>
@@ -400,15 +415,28 @@ with st.sidebar:
 
     # ── Filters ──────────────────────────────────────────────
     st.markdown('<p style="color:#475569; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; padding-bottom: 0.5rem;">Filters</p>', unsafe_allow_html=True)
+
+    def _fmt_tier(t: str) -> str:
+        """rural_remote → Rural Remote, urban → Urban, etc."""
+        return t.replace("_", " ").title()
+
+    def _fmt_alert(a: str) -> str:
+        """critical → Critical, ok → OK, warning → Warning."""
+        return "OK" if a == "ok" else a.title()
+
     all_antigens = sorted(vaccines["antigen_code"].tolist())
     selected_antigens = st.multiselect("Antigen", all_antigens, default=all_antigens)
 
     all_tiers = sorted(facilities["access_tier"].unique().tolist())
-    selected_tiers = st.multiselect("Access Tier", all_tiers, default=all_tiers)
+    selected_tiers = st.multiselect(
+        "Access Tier", all_tiers, default=all_tiers,
+        format_func=_fmt_tier,
+    )
 
     selected_alert = st.multiselect(
         "Alert Status", ["critical", "warning", "ok"],
-        default=["critical", "warning", "ok"]
+        default=["critical", "warning", "ok"],
+        format_func=_fmt_alert,
     )
 
     forecast_horizon = st.slider("Forecast Horizon (weeks)", 1, 8, 8)
