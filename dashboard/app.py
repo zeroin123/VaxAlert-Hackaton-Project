@@ -592,6 +592,42 @@ elif view == "Facility Drill-Down":
         st.warning("No stock data for this facility/antigen combination.")
     st.markdown('</div>', unsafe_allow_html=True)
 
+    # ── Restock suggestion callout ───────────────────────────────────────────
+    if tp and not fcast.empty:
+        import math as _math
+        lt_weeks = lead_time / 7
+        _buffer_by_tier = {
+            "Health Post":   {"urban": 2, "rural": 3, "pastoral": 6},
+            "Health Center": {"urban": 4, "rural": 5, "pastoral": 7},
+            "Hospital":      {"urban": 4, "rural": 5, "pastoral": 7},
+        }
+        _tier = str(sel_fac.get("access_tier", "rural") or "rural").lower()
+        buf_weeks = _buffer_by_tier.get(sel_fac["type"], {}).get(_tier, 4)
+        target_stock = weekly_consumption * (lt_weeks + buf_weeks)
+        ens_fcast = fcast[fcast["model"] == "ensemble"].copy()
+        if not ens_fcast.empty:
+            first_fw = int(ens_fcast["forecast_week"].min())
+            horizon_week = first_fw + max(0, round(lt_weeks) - 1)
+            avail = ens_fcast["forecast_week"].values
+            closest_fw = avail[abs(avail - horizon_week).argmin()]
+            yhat_row = ens_fcast[ens_fcast["forecast_week"] == closest_fw]
+            yhat_at_delivery = float(yhat_row["yhat"].iloc[0]) if not yhat_row.empty else 0.0
+            vial_size = max(1, int(tp.get("vial_size", 1) or 1))
+            raw_order = max(0.0, target_stock - yhat_at_delivery)
+            order_qty = int(_math.ceil(raw_order / vial_size) * vial_size)
+            if order_qty > 0:
+                st.info(
+                    f"📦 **Restock suggestion:** Order **{order_qty:,} doses** of {sel_ant} now "
+                    f"to cover the {lead_time:.0f}-day lead time + {buf_weeks}-week safety buffer. "
+                    f"(Projected stock at delivery: {yhat_at_delivery:.0f} doses · "
+                    f"Target: {target_stock:.0f} doses)"
+                )
+            else:
+                st.success(
+                    f"✅ **Stock sufficient:** Projected stock at delivery ({yhat_at_delivery:.0f} doses) "
+                    f"already meets the target ({target_stock:.0f} doses). No emergency order needed."
+                )
+
     # ── Per-facility feature importance ──────────────────────────────────────
     if not feature_importance.empty:
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
